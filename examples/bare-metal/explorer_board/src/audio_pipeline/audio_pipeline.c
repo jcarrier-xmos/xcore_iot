@@ -136,9 +136,16 @@ void ap_stage_c(chanend_t c_input, chanend_t c_output, chanend_t c_to_gpio) {
                 // calculate the frame power
                 float frame_pow0 = float_s32_to_float(frame_energy_ch0) / (float)appconfAUDIO_FRAME_LENGTH;
                 float frame_pow1 = float_s32_to_float(frame_energy_ch1) / (float)appconfAUDIO_FRAME_LENGTH;
-                if((frame_pow0 > appconfPOWER_THRESHOLD) || (frame_pow1 > appconfPOWER_THRESHOLD)){
-                    led_byte = 1;
-                }
+
+                uint8_t norm_pow = (uint8_t)(128 * frame_pow0 / appconfPOWER_THRESHOLD);
+                uint8_t norm_pow_alt = (uint8_t)(128 * frame_pow1 / appconfPOWER_THRESHOLD);
+                norm_pow = norm_pow > norm_pow_alt ? norm_pow : norm_pow_alt;
+
+                // Send a scaled (to PWM quantas) power level measurement for visualization.
+                led_byte = norm_pow > 63 ? 63 : norm_pow;
+                //if((frame_pow0 > appconfPOWER_THRESHOLD) || (frame_pow1 > appconfPOWER_THRESHOLD)){
+                //    led_byte = 1;
+                //}
                 // send led value to gpio
                 chanend_out_byte(c_to_gpio, led_byte);
                 // change the array format to [sample][channel]

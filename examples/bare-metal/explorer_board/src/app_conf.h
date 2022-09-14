@@ -13,7 +13,7 @@
 #define appconfAUDIO_PIPELINE_MAX_GAIN          60
 #define appconfAUDIO_PIPELINE_MIN_GAIN          0
 #define appconfAUDIO_PIPELINE_GAIN_STEP         4
-#define appconfPOWER_THRESHOLD                  (float)0.00001
+#define appconfPOWER_THRESHOLD                  0.000001f
 #define appconfAUDIO_CLOCK_FREQUENCY            24576000
 #define appconfPDM_CLOCK_FREQUENCY              3072000
 #define appconfPIPELINE_AUDIO_SAMPLE_RATE       16000
