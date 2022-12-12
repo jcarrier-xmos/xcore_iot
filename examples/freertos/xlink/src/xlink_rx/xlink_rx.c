@@ -32,7 +32,7 @@ static int g_timeout_cnts = 0;
 static void i2c_send_word(uint8_t id, uint32_t word) {
     uint8_t debug_buf[5] = {0};
     size_t n = 0;
-    
+
     debug_buf[0] = id;
     memcpy(&debug_buf[1], &word, sizeof(uint32_t));
     rtos_i2c_master_write(i2c_master_ctx, appconfRX_DEBUG_I2C_SLAVE_ADDR, debug_buf, sizeof(debug_buf), &n, 1);
@@ -40,8 +40,6 @@ static void i2c_send_word(uint8_t id, uint32_t word) {
 
 void xlink_report_task(void) {
     int full_rep_cnt = 0;
-    uint8_t debug_buf[5] = {0};
-    size_t n = 0;
 
     while(1) {
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -63,7 +61,6 @@ void xlink_rx(void) {
     uint32_t last_time = 0;
     hwtimer_t tmr_rx = hwtimer_alloc();
     char rx = 'z';
-    uint32_t id = 0;
     int reg_val = 0;
     int direction = 0x0;
 
@@ -104,7 +101,7 @@ void xlink_rx(void) {
                 (void) write_sswitch_reg(appconfRX_NODE_ID, XS1_SSWITCH_XSTATIC_0_NUM + appconfLINK_NUM, x);
 
                 delay_milliseconds(100);
-                
+
                 comm_state = 3;
                 break;
             case 3: /* Wait for transmit credits */
