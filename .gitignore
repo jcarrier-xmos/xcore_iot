@@ -51,11 +51,12 @@
 build/
 
 # filesystem cruft
-**/fat.fs
 **/flash_bin_node0
 **/fw-*
 **/spanning-xn-*
 **/target-xn-*
+*.pem
+*.sec
 
 # wifi cruft
 **/networks.dat

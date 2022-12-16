@@ -4,10 +4,6 @@ IoT
 
 This example demonstrates how to control GPIO using MQTT.
 
-.. note::
-
-    This example application is currently only supported on Linux or Mac.
-
 ************************
 Networking configuration
 ************************
@@ -45,6 +41,14 @@ Run the following commands in the xcore_sdk root folder:
         cd build
         make example_freertos_iot
 
+.. tab:: Windows
+
+    .. code-block:: console
+
+        cmake -G "NMake Makefiles" -B build -DCMAKE_TOOLCHAIN_FILE=xmos_cmake_toolchain/xs3a.cmake
+        cd build
+        nmake example_freertos_iot
+
 ***********************
 Setting up the hardware
 ***********************
@@ -58,7 +62,13 @@ Before the demo can be run, the filesystem must be configured and flashed.
 
     .. code-block:: console
 
-        make flash_fs_example_freertos_iot
+        make flash_app_example_freertos_iot
+
+.. tab:: Windows
+
+    .. code-block:: console
+
+        nmake flash_app_example_freertos_iot
 
 The script will create TLS credentials and prompt you for WiFi credentials:
 
@@ -84,6 +94,12 @@ Run the following commands in the xcore_sdk root folder:
     .. code-block:: console
 
         make run_example_freertos_iot
+
+.. tab:: Windows
+
+    .. code-block:: console
+
+        nmake run_example_freertos_iot
 
 *********************
 Testing MQTT Messages
