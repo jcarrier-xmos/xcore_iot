@@ -10,6 +10,9 @@ set(APP_INCLUDES
     ${CMAKE_CURRENT_LIST_DIR}/src/demos
 )
 
+# Additional includes specific to USB demo.
+set(HID_DEMO_INCLUDES ${CMAKE_CURRENT_LIST_DIR}/../../../modules/io/modules/xud/lib_xud/examples/AN00129_hid_class/src)
+
 #**********************
 # Flags
 #**********************
@@ -51,7 +54,7 @@ set(APP_LINK_OPTIONS
 #**********************
 add_executable(example_bare_metal_explorer_board)
 target_sources(example_bare_metal_explorer_board PUBLIC ${APP_SOURCES})
-target_include_directories(example_bare_metal_explorer_board PUBLIC ${APP_INCLUDES})
+target_include_directories(example_bare_metal_explorer_board PUBLIC ${APP_INCLUDES} ${HID_DEMO_INCLUDES})
 target_compile_definitions(example_bare_metal_explorer_board PRIVATE ${APP_COMPILE_DEFINITIONS})
 target_compile_options(example_bare_metal_explorer_board PRIVATE ${APP_COMPILER_FLAGS})
 target_link_libraries(example_bare_metal_explorer_board PUBLIC core::general io::all framework_core_multitile_support)
