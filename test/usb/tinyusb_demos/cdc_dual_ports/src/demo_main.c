@@ -31,6 +31,7 @@
 #include "FreeRTOS.h"
 #include "demo_main.h"
 #include "tusb.h"
+#include "rtos_printf.h"
 
 // echo to either Serial0 or Serial1
 // with Serial0 as all lower case, Serial1 as all upper case
@@ -74,24 +75,42 @@ static void cdc_task(void)
         uint32_t count = tud_cdc_n_read(itf, buf, sizeof(buf));
 
         // echo back to both serial ports
-        echo_serial_port(0, buf, count);
-        echo_serial_port(1, buf, count);
+        //echo_serial_port(0, buf, count);
+        //echo_serial_port(1, buf, count);
+        rtos_printf("RX %i: %.*s\n", itf, count, buf);
       }
     }
   }
 }
 
-static void cdc_task_wrapper(void *arg) {
+static void cdc_task_wrapper_rx(void *arg) {
+  rtos_printf("Entered cdc rx task\n");
     while(1) {
         cdc_task();
     }
 }
 
+static void cdc_task_wrapper_tx(void *arg) {
+    while(1) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        //tud_cdc_n_write_char(0, 'a');
+        //tud_cdc_n_write_flush(0);
+        //tud_cdc_n_write_char(1, 'b');
+        //tud_cdc_n_write_flush(1);
+    }
+}
+
 void create_tinyusb_demo(rtos_gpio_t *ctx, unsigned priority)
 {
-    xTaskCreate((TaskFunction_t) cdc_task_wrapper,
-                "cdc_task",
-                portTASK_STACK_DEPTH(cdc_task_wrapper),
+    xTaskCreate((TaskFunction_t) cdc_task_wrapper_rx,
+                "cdc_rx_task",
+                portTASK_STACK_DEPTH(cdc_task_wrapper_rx),
+                NULL,
+                priority,
+                NULL);
+    xTaskCreate((TaskFunction_t) cdc_task_wrapper_tx,
+                "cdc_tx_task",
+                portTASK_STACK_DEPTH(cdc_task_wrapper_tx),
                 NULL,
                 priority,
                 NULL);
