@@ -21,6 +21,7 @@ target_link_libraries(sln_voice_example_audio_mux_board_support_xcore_ai_explore
         rtos::drivers::audio
         rtos::drivers::usb
         rtos::freertos_usb
+        rtos::drivers::dfu_image
         sln_voice::example::audio_mux::dac::aic3204
 )
 target_compile_options(sln_voice_example_audio_mux_board_support_xcore_ai_explorer

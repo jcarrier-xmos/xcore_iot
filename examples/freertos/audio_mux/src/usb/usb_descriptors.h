@@ -25,6 +25,7 @@ enum {
 #if AUDIO_INPUT_ENABLED
     ITF_NUM_AUDIO_STREAMING_MIC,
 #endif
+    ITF_NUM_DFU_MODE,
     ITF_NUM_TOTAL
 };
 

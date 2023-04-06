@@ -25,11 +25,11 @@
 
 /* Input configuration */
 #ifndef appconfUSB_INPUT
-#define appconfUSB_INPUT           0
+#define appconfUSB_INPUT           1
 #endif
 
 #ifndef appconfMIC_INPUT
-#define appconfMIC_INPUT           1
+#define appconfMIC_INPUT           0
 #endif
 
 #ifndef appconfI2S_INPUT
@@ -38,7 +38,7 @@
 
 /* Output configuration */
 #ifndef appconfUSB_OUTPUT
-#define appconfUSB_OUTPUT           0
+#define appconfUSB_OUTPUT           1
 #endif
 
 #ifndef appconfI2S_OUTPUT

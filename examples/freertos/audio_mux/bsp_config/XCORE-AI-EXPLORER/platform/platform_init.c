@@ -3,6 +3,7 @@
 
 /* System headers */
 #include <platform.h>
+#include <quadflashlib.h>
 
 /* App headers */
 #include "platform_conf.h"
@@ -33,6 +34,20 @@ static void mclk_init(chanend_t other_tile_c)
 static void flash_init(void)
 {
 #if ON_TILE(FLASH_TILE_NO)
+    fl_QuadDeviceSpec qspi_spec = BOARD_QSPI_SPEC;
+    fl_QSPIPorts qspi_ports = {
+        .qspiCS = PORT_SQI_CS,
+        .qspiSCLK = PORT_SQI_SCLK,
+        .qspiSIO = PORT_SQI_SIO,
+        .qspiClkblk = FLASH_CLKBLK,
+    };
+
+    rtos_dfu_image_init(
+            dfu_image_ctx,
+            &qspi_ports,
+            &qspi_spec,
+            1);
+
     qspi_flash_ctx->ctx.sfdp_skip = true;
     qspi_flash_ctx->ctx.sfdp_supported = false;
     qspi_flash_ctx->ctx.page_size_bytes = 256;
