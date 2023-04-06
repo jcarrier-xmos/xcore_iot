@@ -45,7 +45,7 @@
 #define CFG_TUSB_DEBUG             0
 #endif
 
-#define CFG_TUSB_MEM_ALIGN         __attribute__ ((aligned(4)))
+#define CFG_TUSB_MEM_ALIGN         __attribute__ ((aligned(8)))
 
 #ifndef CFG_TUSB_DEBUG_PRINTF
 #ifdef rtos_printf
@@ -66,12 +66,16 @@
 #define CFG_TUD_XCORE_IO_CORE_MASK       (1 << appconfXUD_IO_CORE)
 
 //------------- CLASS -------------//
+#define CFG_TUD_DFU               1
 #define CFG_TUD_CDC               0
 #define CFG_TUD_MSC               0
 #define CFG_TUD_HID               0
 #define CFG_TUD_MIDI              0
 #define CFG_TUD_AUDIO             1
 #define CFG_TUD_VENDOR            0
+
+// DFU buffer size, it has to be set to the buffer size used in TUD_DFU_DESCRIPTOR
+#define CFG_TUD_DFU_XFER_BUFSIZE    4096
 
 //--------------------------------------------------------------------
 // AUDIO CLASS DRIVER CONFIGURATION

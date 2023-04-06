@@ -26,12 +26,14 @@
  *
  */
 
+#include "tusb_config.h"
 #include "usb_descriptors.h"
 #include "tusb.h"
+#include "class/dfu/dfu_device.h"
 
 #define XMOS_VID    0x20B1
-#define AUDIO_MUX_PID   0x4002
-#define AUDIO_MUX_PRODUCT_STR "Audio MUX Example"
+#define AUDIO_MUX_PID   0x4102
+#define AUDIO_MUX_PRODUCT_STR "Audio MUX + DFU"
 
 //--------------------------------------------------------------------+
 // Device Descriptors
@@ -67,6 +69,9 @@ uint8_t const* tud_descriptor_device_cb(void)
 //--------------------------------------------------------------------+
 // Configuration Descriptor
 //--------------------------------------------------------------------+
+
+// Number of Alternate Interface (each for 1 flash partition)
+#define ALT_COUNT   3
 
 const size_t uac2_interface_descriptors_length =
         TUD_AUDIO_DESC_CLK_SRC_LEN +
@@ -115,8 +120,10 @@ const uint16_t tud_audio_desc_lengths[CFG_TUD_AUDIO] = {
         uac2_total_descriptors_length
 };
 
-#define CONFIG_TOTAL_LEN        (TUD_CONFIG_DESC_LEN + CFG_TUD_AUDIO * uac2_total_descriptors_length)
+#define CONFIG_TOTAL_LEN        (TUD_CONFIG_DESC_LEN + CFG_TUD_AUDIO * uac2_total_descriptors_length + TUD_DFU_DESC_LEN(ALT_COUNT))
 #define EPNUM_AUDIO   0x01
+
+#define FUNC_ATTRS (DFU_ATTR_CAN_UPLOAD | DFU_ATTR_CAN_DOWNLOAD | DFU_ATTR_WILL_DETACH | DFU_ATTR_MANIFESTATION_TOLERANT)
 
 
 #define AUDIO_INTERFACE_STRING_INDEX 4
@@ -195,6 +202,9 @@ uint8_t const desc_configuration[] = {
     /* Class-Specific AS Isochronous Audio Data Endpoint Descriptor(4.10.1.2) */
     TUD_AUDIO_DESC_CS_AS_ISO_EP(/*_attr*/ AUDIO_CS_AS_ISO_DATA_EP_ATT_NON_MAX_PACKETS_OK, /*_ctrl*/ AUDIO_CTRL_NONE, /*_lockdelayunit*/ AUDIO_CS_AS_ISO_DATA_EP_LOCK_DELAY_UNIT_MILLISEC, /*_lockdelay*/ 0x0003),
 #endif
+
+    // Interface number, Alternate count, starting string index, attributes, detach timeout, transfer size
+    TUD_DFU_DESCRIPTOR(ITF_NUM_DFU_MODE, ALT_COUNT, 5, FUNC_ATTRS, 1000, CFG_TUD_DFU_XFER_BUFSIZE),
 };
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
@@ -216,6 +226,9 @@ char const *string_desc_arr[] = {(const char[]) {0x09, 0x04}, // 0: is supported
         AUDIO_MUX_PRODUCT_STR,          // 2: Product
         "123456",                   // 3: Serials, should use chip ID
         AUDIO_MUX_PRODUCT_STR,          // 4: Audio Interface
+        "DFU dev FACTORY v" XCORE_UTILS_STRINGIFY(VERSION),          // 5: DFU device
+        "DFU dev UPGRADE v" XCORE_UTILS_STRINGIFY(VERSION),          // 6: DFU device
+        "DFU dev DATAPARTITION v" XCORE_UTILS_STRINGIFY(VERSION),    // 7: DFU device
         };
 
 static uint16_t _desc_str[32];

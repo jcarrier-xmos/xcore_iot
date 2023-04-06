@@ -21,6 +21,7 @@ target_link_libraries(xcore_iot_example_audio_mux_board_support_xcore_ai_explore
         rtos::drivers::audio
         rtos::drivers::usb
         rtos::freertos_usb
+        rtos::drivers::dfu_image
         xcore_iot::example::audio_mux::dac::aic3204
 )
 target_compile_options(xcore_iot_example_audio_mux_board_support_xcore_ai_explorer

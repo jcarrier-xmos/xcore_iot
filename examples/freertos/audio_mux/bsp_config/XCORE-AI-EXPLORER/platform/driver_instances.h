@@ -10,9 +10,11 @@ extern "C" {
 
 #include "rtos_intertile.h"
 #include "rtos_qspi_flash.h"
+#include "rtos_dfu_image.h"
 #include "rtos_gpio.h"
 #include "rtos_i2c_master.h"
 #include "rtos_i2s.h"
+#include "usb_support.h"
 
 #ifdef __cplusplus
 };
@@ -47,5 +49,6 @@ extern rtos_gpio_t *gpio_ctx_t1;
 extern rtos_mic_array_t *mic_array_ctx;
 extern rtos_i2c_master_t *i2c_master_ctx;
 extern rtos_i2s_t *i2s_ctx;
+extern rtos_dfu_image_t *dfu_image_ctx;
 
 #endif /* DRIVER_INSTANCES_H_ */
