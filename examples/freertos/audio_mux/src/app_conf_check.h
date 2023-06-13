@@ -12,12 +12,20 @@
 #error I2S mode other than master is not currently supported
 #endif
 
-#if (appconfUSB_INPUT + appconfMIC_INPUT + appconfI2S_INPUT) > 1
-#error Only 1 audio input mode can be selected
+#if appconfUSB_OUTPUT == 0
+#error appconfUSB_OUTPUT: Must be selected
 #endif
 
-#if (appconfUSB_INPUT + appconfMIC_INPUT + appconfI2S_INPUT) == 0
-#error At least 1 audio input mode must be selected
+#if appconfMIC_INPUT == 0
+#error appconfMIC_INPUT: Must be selected
+#endif
+
+#if appconfUSB_INPUT
+#error appconfUSB_INPUT: No supported
+#endif
+
+#if appconfI2S_INPUT
+#error appconfI2S_INPUT: No supported
 #endif
 
 #endif /* APP_CONF_CHECK_H_ */

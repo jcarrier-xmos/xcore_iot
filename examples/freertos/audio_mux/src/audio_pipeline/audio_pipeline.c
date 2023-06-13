@@ -29,7 +29,11 @@ typedef struct {
 #error This pipeline is only configured for 240 frame advance
 #endif
 
+// INFER THIS from the configuration settings. AUDIO_PIPELINE_TILE_NO == 0, MICARRAY_TILE_NO == 0
+#define MICS_ON_TILE0_J14_HEADER 1
+
 #if ON_TILE(0)
+#if !MICS_ON_TILE0_J14_HEADER
 static void *audio_pipeline_input_i(void *input_app_data)
 {
     frame_data_t *frame_data;
@@ -52,17 +56,32 @@ static void *audio_pipeline_input_i(void *input_app_data)
 
     return frame_data;
 }
+#else
+static void *audio_pipeline_input_i(void *input_app_data)
+{
+    frame_data_t *frame_data;
+
+    frame_data = pvPortMalloc(sizeof(frame_data_t));
+
+    audio_pipeline_input(input_app_data,
+                       (int32_t **)frame_data->samples,
+                       2, //appconfAUDIO_PIPELINE_CHANNELS,
+                       appconfAUDIO_PIPELINE_FRAME_ADVANCE);
+    return frame_data;
+}
+#endif
 
 static int audio_pipeline_output_i(frame_data_t *frame_data,
                                    void *output_app_data)
 {
     return audio_pipeline_output(output_app_data,
                                (int32_t **)frame_data->samples,
-                               2,
+                               2, //appconfAUDIO_PIPELINE_CHANNELS,
                                appconfAUDIO_PIPELINE_FRAME_ADVANCE);
 }
 #endif
 
+#if !MICS_ON_TILE0_J14_HEADER
 #if ON_TILE(1)
 static void *audio_pipeline_input_i(void *input_app_data)
 {
@@ -72,7 +91,7 @@ static void *audio_pipeline_input_i(void *input_app_data)
 
     audio_pipeline_input(input_app_data,
                        (int32_t **)frame_data->samples,
-                       2,
+                       2, //appconfAUDIO_PIPELINE_CHANNELS,
                        appconfAUDIO_PIPELINE_FRAME_ADVANCE);
     return frame_data;
 }
@@ -87,16 +106,20 @@ static int audio_pipeline_output_i(frame_data_t *frame_data,
     return AUDIO_PIPELINE_FREE_FRAME;
 }
 #endif
+#endif
 
+#if !MICS_ON_TILE0_J14_HEADER || ON_TILE(0)
 static void stage_dummy(frame_data_t *frame_data)
 {
     (void) frame_data;
 }
+#endif
 
 void audio_pipeline_init(
     void *input_app_data,
     void *output_app_data)
 {
+#if !MICS_ON_TILE0_J14_HEADER || ON_TILE(0)
     const int stage_count = 1;
 
     const pipeline_stage_t stages[] = {
@@ -115,4 +138,5 @@ void audio_pipeline_init(
                         (const size_t*) stage_stack_sizes,
                         appconfAUDIO_PIPELINE_TASK_PRIORITY,
                         stage_count);
+#endif
 }

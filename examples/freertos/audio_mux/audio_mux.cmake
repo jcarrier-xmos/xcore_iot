@@ -25,6 +25,9 @@ set(APP_COMPILER_FLAGS
 
 set(APP_COMPILE_DEFINITIONS
     DEBUG_PRINT_ENABLE=1
+    #DEBUG_PRINT_ENABLE_RTOS_USB=1       # Enable RTOS USB driver debug
+    #DEBUG_PRINT_ENABLE_TUSB_DCD=1       # Enable TinyUSB dcd_xcore debug
+    #CFG_TUSB_DEBUG=3                    # Enable TinyUSB debug
     PLATFORM_USES_TILE_0=1
     PLATFORM_USES_TILE_1=1
 

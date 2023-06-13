@@ -22,6 +22,49 @@
 #include "usb_audio.h"
 #include "audio_pipeline.h"
 
+//#define BLOCKS_TO_BUFFER 34 // ~0.5 sec @ 16KHz
+#define BLOCKS_TO_BUFFER 67 // ~1 sec @ 16KHz
+#define CHANNELS_TO_BUFFER 2 //appconfAUDIO_PIPELINE_CHANNELS
+
+#define TOTAL_SAMPLES_PER_CHANNEL (appconfAUDIO_PIPELINE_FRAME_ADVANCE * BLOCKS_TO_BUFFER)
+#define TOTAL_SAMPLES (TOTAL_SAMPLES_PER_CHANNEL * CHANNELS_TO_BUFFER)
+
+static int mic_assertion_disabled = 0;
+static int sample_buffer_full = 0;
+static int num_samples_buffered = 0;
+static int sample_read_index = 0;
+int buffering_channel_a; // Cycle 0..3
+int buffering_channel_b; // Cycle 4..7
+
+#include "rtos_mic_array.h"
+#if SAMPLE_FORMAT == 0//RTOS_MIC_ARRAY_CHANNEL_SAMPLE
+SAMPLE_TYPE sample_buffer[CHANNELS_TO_BUFFER + 1][TOTAL_SAMPLES_PER_CHANNEL];
+#else // RTOS_MIC_ARRAY_SAMPLE_CHANNEL
+SAMPLE_TYPE sample_buffer[TOTAL_SAMPLES_PER_CHANNEL][CHANNELS_TO_BUFFER + 1];
+#endif
+
+#include <math.h>
+
+void GenerateWaveform(void)
+{
+    for (int ch = 0; ch < CHANNELS_TO_BUFFER; ch++)
+    {
+        uint32_t freq = (1000 * ((buffering_channel_a << 1) + ch + 1));
+        rtos_printf("Freq: %d\n", freq);
+
+        for (int s = 0; s < TOTAL_SAMPLES_PER_CHANNEL; s++)
+        {
+#if SAMPLE_FORMAT == 0 // RTOS_MIC_ARRAY_CHANNEL_SAMPLE
+            sample_buffer[ch][s] = ((SAMPLE_TYPE)(16384 * sin((2 * 3.14f * freq * s) / TOTAL_SAMPLES_PER_CHANNEL)));
+            //SAMPLE_TYPE* dst = (SAMPLE_TYPE*)sample_buffer + (s * CHANNELS_TO_BUFFER) + ch;
+            //*dst = ((SAMPLE_TYPE)(16384 * sin((2 * 3.14f * freq * s) / TOTAL_SAMPLES_PER_CHANNEL)));
+#else
+            sample_buffer[s][ch] = ((SAMPLE_TYPE)(16384 * sin((2 * 3.14f * freq * s) / TOTAL_SAMPLES_PER_CHANNEL)));
+#endif
+        }
+    }
+}
+
 void audio_pipeline_input(void *input_app_data,
                         int32_t **input_audio_frames,
                         size_t ch_count,
@@ -58,37 +101,11 @@ void audio_pipeline_input(void *input_app_data,
                       portMAX_DELAY);
 #endif
 
-#if appconfUSB_INPUT
-    /*
-     * As noted above, this does not block.
-     * and expects mic 0, mic 1
-     */
-    usb_audio_recv_blocking(intertile_ctx,
-                   frame_count,
-                   input_audio_frames,
-                   ch_count);
-#endif
-
-#if appconfI2S_INPUT
-    /* This shouldn't need to block given it shares a clock with the PDM mics */
-
-    /* I2S provides sample channel format */
-    int32_t tmp[appconfAUDIO_PIPELINE_FRAME_ADVANCE][appconfAUDIO_PIPELINE_CHANNELS];
-    int32_t *tmpptr = (int32_t *)input_audio_frames;
-
-    size_t rx_count =
-    rtos_i2s_rx(i2s_ctx,
-                (int32_t*) tmp,
-                frame_count,
-                portMAX_DELAY);
-    xassert(rx_count == frame_count);
-
-    for (int i=0; i<appconfAUDIO_PIPELINE_FRAME_ADVANCE; i++) {
-        /* ref is first */
-        *(tmpptr + i) = tmp[i][0];
-        *(tmpptr + i + appconfAUDIO_PIPELINE_FRAME_ADVANCE) = tmp[i][1];
+    if (!sample_buffer_full && mic_assertion_disabled)
+    {
+        mic_assertion_disabled = 0;
+        //rtos_mic_array_assertion_enable(); // TODO enable after fixing 2-mic issue
     }
-#endif
 }
 
 int audio_pipeline_output(void *output_app_data,
@@ -98,28 +115,75 @@ int audio_pipeline_output(void *output_app_data,
 {
     (void) output_app_data;
 
-#if appconfI2S_OUTPUT
-    /* I2S expects sample channel format */
-    int32_t tmp[appconfAUDIO_PIPELINE_FRAME_ADVANCE][appconfAUDIO_PIPELINE_CHANNELS];
-    int32_t *tmpptr = (int32_t *)output_audio_frames;
-    for (int j=0; j<appconfAUDIO_PIPELINE_FRAME_ADVANCE; j++) {
-        /* ASR output is first */
-        tmp[j][0] = *(tmpptr+j);
-        tmp[j][1] = *(tmpptr+j+appconfAUDIO_PIPELINE_FRAME_ADVANCE);
-    }
-
-    rtos_i2s_tx(i2s_ctx,
-                (int32_t*) tmp,
-                frame_count,
-                portMAX_DELAY);
-#endif
-
+    // Switch between filling up a buffer and sending that buffer to USB
+    // While transferring to USB the PDM RX ISR assertion is disabled.
+    if (sample_buffer_full)
+    {
 #if appconfUSB_OUTPUT
-    usb_audio_send(intertile_ctx,
-                frame_count,
-                output_audio_frames,
-                2);
+        usb_audio_send(
+            intertile_ctx,
+            appconfAUDIO_PIPELINE_FRAME_ADVANCE,
+            (SAMPLE_TYPE **)&((SAMPLE_TYPE *)sample_buffer)[sample_read_index],
+            CHANNELS_TO_BUFFER); //2); //appconfAUDIO_PIPELINE_CHANNELS);
 #endif
+        if (num_samples_buffered <= appconfAUDIO_PIPELINE_FRAME_ADVANCE) {
+            rtos_printf("Done.\n");
+            GenerateWaveform();
+            num_samples_buffered = 0;
+            sample_buffer_full = 0;
+        } else {
+            sample_read_index += appconfAUDIO_PIPELINE_FRAME_ADVANCE;
+            num_samples_buffered -= appconfAUDIO_PIPELINE_FRAME_ADVANCE;
+        }
+    } else {
+        int num_samples = CHANNELS_TO_BUFFER * frame_count;
+        if ((num_samples + num_samples_buffered) >= TOTAL_SAMPLES) {
+            num_samples -= (TOTAL_SAMPLES - num_samples_buffered);
+            sample_buffer_full = 1;
+            rtos_mic_array_assertion_disable();
+            rtos_printf("Capture complete (Mic: %d and %d)!\n", buffering_channel_a, buffering_channel_b);
+            rtos_printf("Dumping to Samples...\n");
+
+#if 0
+            // Rotate which pair of mics to buffer.
+            buffering_channel_a = (buffering_channel_a + 1) % (MIC_ARRAY_CONFIG_MIC_COUNT >> 1);
+            buffering_channel_b++;
+            if (buffering_channel_b > (MIC_ARRAY_CONFIG_MIC_COUNT - 1)) {
+                buffering_channel_b = (MIC_ARRAY_CONFIG_MIC_COUNT >> 1);
+            }
+#endif
+
+            sample_read_index = 0;
+        }
+
+        if ((num_samples + num_samples_buffered) > TOTAL_SAMPLES) {
+            rtos_printf("BAD!\n");
+        }
+
+#if 1 // ENABLE TO CAPTURE MIC DATA.
+        //rtos_mic_array_assertion_disable(); // TODO: Remove
+        //rtos_printf("\n\n===========================\n\n");
+        for (int s = 0; s < num_samples; s++)
+        {
+            //if ((s != 0) && (s % 8 == 0)) {
+            //    rtos_printf("\n");
+            //}
+            //rtos_printf("%8d, ", ((int32_t *)output_audio_frames)[s] >> 16);
+#if 1
+            int dest_sample = num_samples_buffered + s;
+#if SAMPLE_FORMAT == 0 //RTOS_MIC_ARRAY_CHANNEL_SAMPLE
+            sample_buffer[0][dest_sample] = (SAMPLE_TYPE)(((int32_t *)output_audio_frames)[s + (buffering_channel_a * appconfAUDIO_PIPELINE_FRAME_ADVANCE)]);// >> 16);
+            sample_buffer[1][dest_sample] = (SAMPLE_TYPE)(((int32_t *)output_audio_frames)[s + (buffering_channel_b * appconfAUDIO_PIPELINE_FRAME_ADVANCE)]);// >> 16);
+#else
+            #error NOT FUNCTIONAL
+#endif
+#endif
+        }
+        //rtos_printf("\n\n===========================\n\n");
+#endif
+
+        num_samples_buffered += num_samples;
+    }
 
     return AUDIO_PIPELINE_FREE_FRAME;
 }
@@ -146,6 +210,22 @@ void startup_task(void *arg)
 {
     rtos_printf("Startup task running from tile %d on core %d\n", THIS_XCORE_TILE, portGET_CORE_ID());
 
+#if ON_TILE(0)
+    GenerateWaveform();
+
+    for (int s = 0; s < TOTAL_SAMPLES_PER_CHANNEL; s++)
+    {
+#if SAMPLE_FORMAT == 0 // RTOS_MIC_ARRAY_CHANNEL_SAMPLE
+            sample_buffer[2][s] = 0x5555;
+#else
+            sample_buffer[s][2] = 0x5555;
+#endif
+    }
+
+    buffering_channel_a = 0;
+    buffering_channel_b = MIC_ARRAY_CONFIG_MIC_COUNT >> 1;
+#endif
+
     platform_start();
 
     audio_pipeline_init(NULL, NULL);
@@ -165,6 +245,9 @@ void vApplicationMinimalIdleHook(void)
 static void tile_common_init(chanend_t c)
 {
     platform_init(c);
+#if ON_TILE(USB_TILE_NO)
+    rtos_mic_array_assertion_disable(); // TODO: Remove
+#endif
     chanend_free(c);
 
 #if appconfUSB_ENABLED && ON_TILE(USB_TILE_NO)

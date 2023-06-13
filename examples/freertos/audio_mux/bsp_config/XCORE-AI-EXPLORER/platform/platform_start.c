@@ -38,6 +38,7 @@ static void flash_start(void)
 #endif
 }
 
+#if 0
 static void i2c_master_start(void)
 {
     rtos_i2c_master_rpc_config(i2c_master_ctx, appconfI2C_MASTER_RPC_PORT, appconfI2C_MASTER_RPC_PRIORITY);
@@ -46,7 +47,9 @@ static void i2c_master_start(void)
     rtos_i2c_master_start(i2c_master_ctx);
 #endif
 }
+#endif
 
+#if 0
 static void audio_codec_start(void)
 {
 #if appconfI2S_ENABLED
@@ -62,6 +65,7 @@ static void audio_codec_start(void)
 #endif
 #endif
 }
+#endif
 
 static void mics_start(void)
 {
@@ -69,10 +73,12 @@ static void mics_start(void)
     rtos_mic_array_start(
             mic_array_ctx,
             2 * MIC_ARRAY_CONFIG_SAMPLES_PER_FRAME,
+            //appconfAUDIO_PIPELINE_CHANNELS * MIC_ARRAY_CONFIG_SAMPLES_PER_FRAME,
             appconfPDM_MIC_INTERRUPT_CORE);
 #endif
 }
 
+#if 0
 static void i2s_start(void)
 {
 #if appconfI2S_ENABLED
@@ -92,6 +98,7 @@ static void i2s_start(void)
 #endif
 #endif
 }
+#endif
 
 static void usb_start(void)
 {
@@ -106,9 +113,9 @@ void platform_start(void)
 
     gpio_start();
     flash_start();
-    i2c_master_start();
-    audio_codec_start();
+    //i2c_master_start();
+    //audio_codec_start();
     mics_start();
-    i2s_start();
+    //i2s_start();
     usb_start();
 }

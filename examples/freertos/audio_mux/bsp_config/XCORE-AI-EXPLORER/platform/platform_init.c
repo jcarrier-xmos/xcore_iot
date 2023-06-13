@@ -17,6 +17,7 @@ static void mclk_init(chanend_t other_tile_c)
 #if ON_TILE(1)
     app_pll_init();
 #endif
+#if 0
 #if ON_TILE(0)
 #if appconfUSB_ENABLED && appconfUSB_AUDIO_ENABLED
     adaptive_rate_adjust_init(other_tile_c, MCLK_CLKBLK);
@@ -26,6 +27,7 @@ static void mclk_init(chanend_t other_tile_c)
     clock_set_source_port(MCLK_CLKBLK, PORT_MCLK_IN);
     port_set_clock(PORT_MCLK_IN, MCLK_CLKBLK);
     clock_start(MCLK_CLKBLK);
+#endif
 #endif
 #endif
 }
@@ -80,6 +82,7 @@ static void gpio_init(void)
 #endif
 }
 
+#if 0
 static void i2c_init(void)
 {
     static rtos_driver_rpc_t i2c_rpc_config;
@@ -105,6 +108,7 @@ static void i2c_init(void)
             intertile_ctx);
 #endif
 }
+#endif
 
 static void mics_init(void)
 {
@@ -112,10 +116,11 @@ static void mics_init(void)
     rtos_mic_array_init(
             mic_array_ctx,
             (1 << appconfPDM_MIC_IO_CORE),
-            RTOS_MIC_ARRAY_CHANNEL_SAMPLE);
+            SAMPLE_FORMAT);
 #endif
 }
 
+#if 0
 static void i2s_init(void)
 {
 #if appconfI2S_ENABLED
@@ -153,6 +158,7 @@ static void i2s_init(void)
 #endif
 #endif
 }
+#endif
 
 static void usb_init(void)
 {
@@ -168,8 +174,8 @@ void platform_init(chanend_t other_tile_c)
     mclk_init(other_tile_c);
     gpio_init();
     flash_init();
-    i2c_init();
+    //i2c_init();
     mics_init();
-    i2s_init();
+    //i2s_init();
     usb_init();
 }

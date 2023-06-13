@@ -4,13 +4,15 @@
 #ifndef USB_AUDIO_H_
 #define USB_AUDIO_H_
 
+#include "app_conf.h"
+
 /*
  * frame_buffers format assumes:
  *   raw_audio_frame
  */
 void usb_audio_send(rtos_intertile_t *intertile_ctx,
                     size_t frame_count,
-                    int32_t **frame_buffers,
+                    SAMPLE_TYPE **frame_buffers,
                     size_t num_chans);
 
 /*

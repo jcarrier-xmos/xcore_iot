@@ -107,35 +107,39 @@ void tud_resume_cb(void)
 
 #if CFG_TUD_AUDIO_FUNC_1_N_BYTES_PER_SAMPLE_TX == 2
 typedef int16_t samp_t;
-#elif CFG_TUD_AUDIO_FUNC_1_N_BYTES_PER_SAMPLE_TX == 4
-typedef int32_t samp_t;
 #else
-#error CFG_TUD_AUDIO_FUNC_1_N_BYTES_PER_SAMPLE_TX must be either 2 or 4
+#error CFG_TUD_AUDIO_FUNC_1_N_BYTES_PER_SAMPLE_TX must be either 2
 #endif
 
+#ifndef SAMPLE_FORMAT
+#error SAMPLE_FORMAT: Undefined
+#endif
+
+#ifndef SAMPLE_TYPE
+#error SAMPLE_TYPE: Undefined
+#endif
+
+#if SAMPLE_FORMAT == 0 // RTOS_MIC_ARRAY_CHANNEL_SAMPLE
 void usb_audio_send(rtos_intertile_t *intertile_ctx,
                     size_t frame_count,
-                    int32_t **frame_buffers,
+                    SAMPLE_TYPE **frame_buffers,
                     size_t num_chans)
 {
     samp_t usb_audio_in_frame[appconfAUDIO_PIPELINE_FRAME_ADVANCE][CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX];
-    int32_t *frame_buf_ptr = (int32_t *) frame_buffers;
-
-#if CFG_TUD_AUDIO_FUNC_1_N_BYTES_PER_SAMPLE_TX == 2
-    const int src_32_shift = 16;
-#elif CFG_TUD_AUDIO_FUNC_1_N_BYTES_PER_SAMPLE_TX == 4
-    const int src_32_shift = 0;
-#endif
-
-    memset(usb_audio_in_frame, 0, sizeof(samp_t) * appconfAUDIO_PIPELINE_FRAME_ADVANCE * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX);
+    SAMPLE_TYPE *frame_buf_ptr = (SAMPLE_TYPE *) frame_buffers;
 
     xassert(frame_count == appconfAUDIO_PIPELINE_FRAME_ADVANCE);
+    memset(usb_audio_in_frame, 0, sizeof(samp_t) * appconfAUDIO_PIPELINE_FRAME_ADVANCE * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX);
 
-    for(int ch=0; ch<CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX; ch++) {
+    int last_ch = num_chans;
+    if (last_ch > CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX)
+    {
+        last_ch = CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX;
+    }
+
+    for(int ch=0; ch<last_ch; ch++) {
         for (int i=0; i<appconfAUDIO_PIPELINE_FRAME_ADVANCE; i++) {
-            if (ch < num_chans) {
-                usb_audio_in_frame[i][ch] = frame_buf_ptr[i+(appconfAUDIO_PIPELINE_FRAME_ADVANCE*ch)] >> src_32_shift;
-            }
+            usb_audio_in_frame[i][ch] = frame_buf_ptr[i+(appconfAUDIO_PIPELINE_FRAME_ADVANCE*ch)];
         }
     }
 
@@ -147,6 +151,30 @@ void usb_audio_send(rtos_intertile_t *intertile_ctx,
     }
 #endif
 }
+
+#else
+
+void usb_audio_send(rtos_intertile_t *intertile_ctx,
+                    size_t frame_count,
+                    SAMPLE_TYPE **frame_buffers,
+                    size_t num_chans)
+{
+    samp_t *usb_audio_in_frame = (samp_t *) frame_buffers;
+    SAMPLE_TYPE *frame_buf_ptr = (SAMPLE_TYPE *) frame_buffers;
+
+    xassert(frame_count == appconfAUDIO_PIPELINE_FRAME_ADVANCE);
+
+#if AUDIO_INPUT_ENABLED
+    const size_t bytes_to_send = appconfAUDIO_PIPELINE_FRAME_ADVANCE * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX * sizeof(samp_t);
+    if (mic_interface_open) {
+        if (xStreamBufferSend(samples_to_host_stream_buf, usb_audio_in_frame, bytes_to_send, 0) != bytes_to_send) {
+            rtos_printf("lost VFE output samples\n");
+        }
+    }
+#endif
+}
+
+#endif
 
 void usb_audio_recv(rtos_intertile_t *intertile_ctx,
                     size_t frame_count,
@@ -689,7 +717,7 @@ bool tud_audio_tx_done_pre_load_cb(uint8_t rhport,
             tud_audio_write(stream_buffer_audio_frames, sizeof(stream_buffer_audio_frames));
         }
     } else {
-        rtos_printf("Oops buffer is empty!\n");
+        //rtos_printf("Oops buffer is empty!\n");
     }
 
     return true;

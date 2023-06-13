@@ -11,6 +11,11 @@
 #define appconfI2S_RPC_PORT            3
 #define appconfAUDIOPIPELINE_PORT      4
 
+#include "rtos_mic_array.h"
+#define SAMPLE_TYPE     int16_t
+#define SAMPLE_FORMAT   0 //RTOS_MIC_ARRAY_CHANNEL_SAMPLE
+//#define SAMPLE_FORMAT   1 //RTOS_MIC_ARRAY_SAMPLE_CHANNEL
+
 /* Application tile specifiers */
 #include "platform/driver_instances.h"
 #define AUDIO_PIPELINE_TILE_NO  MICARRAY_TILE_NO
@@ -42,7 +47,7 @@
 #endif
 
 #ifndef appconfI2S_OUTPUT
-#define appconfI2S_OUTPUT           1
+#define appconfI2S_OUTPUT           0
 #endif
 
 #ifndef appconfI2S_ENABLED
@@ -77,17 +82,17 @@
 
 /* I/O and interrupt cores for Tile 0 */
 /* Note, USB and SPI are mutually exclusive */
-#define appconfXUD_IO_CORE                      1 /* Must be kept off core 0 with the RTOS tick ISR */
-#define appconfSPI_IO_CORE                      1 /* Must be kept off core 0 with the RTOS tick ISR */
-#define appconfUSB_INTERRUPT_CORE               2 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
-#define appconfUSB_SOF_INTERRUPT_CORE           3 /* Must be kept off I/O cores. Best kept off cores with other ISRs. */
-#define appconfSPI_INTERRUPT_CORE               2 /* Must be kept off I/O cores. */
+#define appconfPDM_MIC_IO_CORE                  1 /* Must be kept off core 0 with the RTOS tick ISR */
+#define appconfXUD_IO_CORE                      2 /* Must be kept off core 0 with the RTOS tick ISR */
+#define appconfSPI_IO_CORE                      2 /* Must be kept off core 0 with the RTOS tick ISR */
+#define appconfUSB_INTERRUPT_CORE               3 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
+#define appconfSPI_INTERRUPT_CORE               3 /* Must be kept off I/O cores. */
+#define appconfUSB_SOF_INTERRUPT_CORE           4 /* Must be kept off I/O cores. Best kept off cores with other ISRs. */
+#define appconfPDM_MIC_INTERRUPT_CORE           4 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
 
 /* I/O and interrupt cores for Tile 1 */
-#define appconfPDM_MIC_IO_CORE                  1 /* Must be kept off core 0 with the RTOS tick ISR */
 #define appconfI2S_IO_CORE                      2 /* Must be kept off core 0 with the RTOS tick ISR */
 #define appconfI2C_IO_CORE                      3 /* Must be kept off core 0 with the RTOS tick ISR */
-#define appconfPDM_MIC_INTERRUPT_CORE           4 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
 #define appconfI2S_INTERRUPT_CORE               5 /* Must be kept off I/O cores. Best kept off core 0 with the tick ISR. */
 #define appconfI2C_INTERRUPT_CORE               0 /* Must be kept off I/O cores. */
 
