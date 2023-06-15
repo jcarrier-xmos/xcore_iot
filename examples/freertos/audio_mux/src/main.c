@@ -131,10 +131,13 @@ void vApplicationMallocFailedHook(void)
     for(;;);
 }
 
+#define MEM_ANALYSIS_ENABLED 0
 static void mem_analysis(void)
 {
 	for (;;) {
+#if MEM_ANALYSIS_ENABLED
 		rtos_printf("Tile[%d]:\n\tMinimum heap free: %d\n\tCurrent heap free: %d\n", THIS_XCORE_TILE, xPortGetMinimumEverFreeHeapSize(), xPortGetFreeHeapSize());
+#endif
 		vTaskDelay(pdMS_TO_TICKS(5000));
 	}
 }
