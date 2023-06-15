@@ -31,7 +31,11 @@ void platform_init_tile_1(chanend_t c_other_tile)
 
     app_pll_init();
 
-    tile1_mic_init();
+    //tile1_mic_init();
+    // Wait for other tile to init mic array
+    ret_char = chanend_in_byte(c_other_tile);
+    debug_printf("Starting I2S\n");
+
     tile1_i2s_init();
     tile1_uart_init();
 }

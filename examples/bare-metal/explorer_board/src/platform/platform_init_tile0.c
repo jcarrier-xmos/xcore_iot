@@ -33,6 +33,9 @@ void platform_init_tile_0(chanend_t c_other_tile)
         chanend_out_byte(c_other_tile, 0x00);
     }
 
+    ma_vanilla_init();
+    chanend_out_byte(c_other_tile, 0x00);
+
     tile0_init_spi();
     tile0_init_spi_device(&tile0_ctx->spi_ctx);
 
