@@ -13,7 +13,7 @@ changing the trace mode define in the cmake file to:
 ``USE_TRACE_MODE=TRACE_MODE_XSCOPE_ASCII``.
 
 The application starts the FreeRTOS scheduler running on both ``tile[0]`` and
-``tile[1]``. ``tile[0]`` has 11 tasks, whereas ``tile[1]`` has only 1 task runing.
+``tile[1]``. ``tile[0]`` has 11 tasks, whereas ``tile[1]`` has only 1 task running.
 Both ``tile[0]`` and ``tile[1]`` share the same logic for a "hello" task which
 prints a message every second. The other 10 ``tile[0]`` tasks serve to demonstrate
 an issue that can be introduced on command by the user by interacting with the
